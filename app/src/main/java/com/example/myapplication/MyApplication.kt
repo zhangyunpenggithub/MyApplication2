@@ -3,9 +3,7 @@ package com.example.myapplication
 import android.app.Application
 import android.app.Instrumentation
 import android.content.Context
-
-
-
+import android.util.Log
 
 
 /**
@@ -25,21 +23,27 @@ class MyApplication : Application() {
 
     override fun attachBaseContext(base: Context?) {
         super.attachBaseContext(base)
-        // 先获取到当前的ActivityThread对象
-        val activityThreadClass = Class.forName("android.app.ActivityThread")
-        val currentActivityThreadMethod = activityThreadClass.getDeclaredMethod("currentActivityThread")
-        currentActivityThreadMethod.isAccessible = true
-        val currentActivityThread = currentActivityThreadMethod.invoke(null)
+        hookStartActivity()
+    }
 
-        // 拿到原始的 mInstrumentation字段
-        val mInstrumentationField = activityThreadClass.getDeclaredField("mInstrumentation")
-        mInstrumentationField.isAccessible = true
-        val mInstrumentation = mInstrumentationField.get(currentActivityThread) as Instrumentation
+    /**
+     * 跳转activity之前打印一行日志
+     */
+    private fun hookStartActivity() {
+        //拿到原来的Instrumentation
+        try {
+            val clazz = Class.forName("android.app.ActivityThread")
+            val currentThreadField = clazz.getDeclaredField("sCurrentActivityThread")
+            currentThreadField.isAccessible = true
+            val currentThread = currentThreadField.get(null)
+            val mInstrumentationDeclaredField = clazz.getDeclaredField("mInstrumentation")
+            mInstrumentationDeclaredField.isAccessible = true
+            val evilInstrumentation = EvilInstrumentation(mInstrumentationDeclaredField.get(currentThread) as Instrumentation)
+            mInstrumentationDeclaredField.set(currentThread, evilInstrumentation)
+        } catch (e: Exception) {
+            Log.e("zhangyunpeng", "application有错误")
+        }
 
-        // 创建代理对象
-        val evilInstrumentation = EvilInstrumentation(mInstrumentation)
 
-        // 偷梁换柱
-        mInstrumentationField.set(currentActivityThread, evilInstrumentation)
     }
 }

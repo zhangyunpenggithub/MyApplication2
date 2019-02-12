@@ -11,7 +11,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         textview.setOnClickListener {
-            this@MainActivity.startActivity(Intent(this, MainActivity2::class.java))
+            applicationContext.startActivity(Intent(this, MainActivity2::class.java))
         }
     }
 }
